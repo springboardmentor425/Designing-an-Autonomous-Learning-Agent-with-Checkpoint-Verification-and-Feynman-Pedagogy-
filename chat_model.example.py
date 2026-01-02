@@ -1,36 +1,29 @@
 import os
-import time
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import HumanMessage
 
+# 1. Configuration
+os.environ["GOOGLE_API_KEY"] = "your-api-key"
 
-API_KEY = os.getenv("GEMINI_API_KEY")
-
-model = ChatGoogleGenerativeAI(
-    model="gemini-pro",  
-    temperature=0.7,
-    max_retries=1,
+llm = ChatGoogleGenerativeAI(
+    model="gemini-3-flash-preview",
+    temperature=1.0,
+    max_output_tokens=500
 )
 
-def generate_text(user_input):
-    time.sleep(2)  
-    response = model.invoke(user_input)
-    return response.content
+# 3. Hard-coded Message
+query = [HumanMessage(content="write about india in short")]
 
-if __name__ == "__main__":
-    prompt = "Write a one-sentence poem about the ocean."
-    output = generate_text(prompt)
+# 4. Invoke and Print
+print("--- Response from (Gemini 3 Flash) ---")
+try:
+    response = llm.invoke(query)
+    content=response.content
+    if isinstance(content, list):
+        msg_text = "".join([part['text'] for part in content if 'text' in part])
+        print(msg_text)
+    elif isinstance(content, str):
+        print(content)
 
-    print("Input:", prompt)
-    print("Output:", output)
-
-prompt_template = ChatPromptTemplate.from_messages([
-    ("system", "You are a helpful assistant."),
-    ("human", "{input}")
-])
-
-chain = prompt_template | model
-
-time.sleep(2)
-response = chain.invoke({"input": "Hello, how are you?"})
-print(response.content)
+except Exception as e:
+    print(f"Error: {e}")
