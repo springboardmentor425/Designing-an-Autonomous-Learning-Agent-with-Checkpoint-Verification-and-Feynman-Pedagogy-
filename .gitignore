@@ -1,0 +1,12 @@
+# virtual environment
+venv/
+
+# environment variables
+.env
+
+# python cache
+__pycache__/
+*.pyc
+
+# api key file 
+chat_model.py
