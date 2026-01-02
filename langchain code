@@ -1,0 +1,54 @@
+from typing import TypedDict, List
+from langgraph.graph import StateGraph, END
+
+# 1. Define the State of the learning agent
+class LearningState(TypedDict):
+    topic: str
+    sub_topics: List[str]
+    current_index: int
+    explanation: str
+    feedback: str
+    verified: bool
+
+# 2. Node: The Feynman Student
+def feynman_student(state: LearningState):
+    topic = state['sub_topics'][state['current_index']]
+    # Prompt: "Explain {topic} to a 10-year-old using the Feynman technique."
+    explanation = f"Simplified explanation of {topic}..."
+    return {"explanation": explanation}
+
+# 3. Node: The Verifier (Checkpoint)
+def verifier_mentor(state: LearningState):
+    # Prompt: "Identify gaps in this explanation: {state['explanation']}"
+    # If gaps are found, verified = False
+    is_correct = True # Logic to check against source material
+    return {"verified": is_correct, "feedback": "Needs more detail on X."}
+
+# 4. Logic to Route the Agent
+def should_continue(state: LearningState):
+    if state['verified']:
+        if state['current_index'] >= len(state['sub_topics']) - 1:
+            return "complete"
+        return "next_topic"
+    return "re_learn"
+
+# 5. Build the Graph
+workflow = StateGraph(LearningState)
+
+workflow.add_node("student", feynman_student)
+workflow.add_node("verifier", verifier_mentor)
+
+workflow.set_entry_point("student")
+workflow.add_edge("student", "verifier")
+
+workflow.add_conditional_edges(
+    "verifier",
+    should_continue,
+    {
+        "next_topic": "student", # Increments index in real implementation
+        "re_learn": "student",   # Sends back with feedback
+        "complete": END
+    }
+)
+
+app = workflow.compile()
