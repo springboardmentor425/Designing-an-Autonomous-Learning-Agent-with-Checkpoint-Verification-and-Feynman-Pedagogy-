@@ -5,7 +5,6 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
 
 api=os.environ.get("GOOGLE_API_KEY")
-print(api)
 
 llm = ChatGoogleGenerativeAI(
     model="gemini-3-flash-preview",
