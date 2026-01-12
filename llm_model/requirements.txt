@@ -1,0 +1,4 @@
+langchain
+tavily-python
+python-dotenv
+requests
