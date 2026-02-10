@@ -120,8 +120,6 @@ Once the server is running:
 ---
 
 ## Notes
-
-- This project has been **tested and verified to work error-free on Windows**
 - All notebooks include automatic Windows compatibility fixes
 - The `uvx` command handles all dependency installation automatically
 
