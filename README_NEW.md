@@ -20,8 +20,8 @@ pip install uv
 
 ## 3. Clone the Repository
 ```powershell
-git clone <your-repo-url>
-cd <your-repository-name>
+git clone https://github.com/SaniyaNirmale/Infosys_springboard_Project.git
+cd Infosys_springboard_Project
 ```
 
 ## 4. Configure Environment Variables
