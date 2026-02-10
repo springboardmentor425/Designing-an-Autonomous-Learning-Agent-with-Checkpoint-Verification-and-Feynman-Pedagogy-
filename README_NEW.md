@@ -21,7 +21,7 @@ pip install uv
 ## 3. Clone the Repository
 ```powershell
 git clone <your-repo-url>
-cd Designing-an-Autonomous-Learning-Agent-with-Checkpoint-Verification-and-Feynman-Pedagogy---Group-2-main
+cd <your-repository-name>
 ```
 
 ## 4. Configure Environment Variables
