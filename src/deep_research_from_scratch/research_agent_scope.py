@@ -36,7 +36,7 @@ from deep_research_from_scratch.retry_utils import invoke_with_retry
 # ===== CONFIGURATION =====
 
 # Initialize model
-model = init_chat_model("groq:llama3-8b-8192")
+model = init_chat_model("groq:mixtral-8x7b-32768")
 
 # ===== WORKFLOW NODES =====
 
@@ -104,4 +104,8 @@ deep_researcher_builder.add_edge("write_research_brief", END)
 
 # Compile the workflow
 scope_research = deep_researcher_builder.compile()
+
+
+
+
 

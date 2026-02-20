@@ -65,7 +65,7 @@ except ImportError:
 # ===== CONFIGURATION =====
 
 supervisor_tools = [ConductResearch, ResearchComplete, think_tool]
-supervisor_model = init_chat_model("groq:llama3-8b-8192")
+supervisor_model = init_chat_model("groq:mixtral-8x7b-32768")
 supervisor_model_with_tools = supervisor_model.bind_tools(supervisor_tools)
 
 # System constants
@@ -310,4 +310,8 @@ supervisor_builder.add_node("supervisor", supervisor)
 supervisor_builder.add_node("supervisor_tools", supervisor_tools)
 supervisor_builder.add_edge(START, "supervisor")
 supervisor_agent = supervisor_builder.compile()
+
+
+
+
 

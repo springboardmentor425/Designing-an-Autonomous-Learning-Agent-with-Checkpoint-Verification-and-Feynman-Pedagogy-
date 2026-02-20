@@ -53,8 +53,8 @@ def get_mcp_client():
     return _client
 
 # Initialize models
-compress_model = init_chat_model("groq:llama3-8b-8192")
-model = init_chat_model("groq:llama3-8b-8192")
+compress_model = init_chat_model("groq:mixtral-8x7b-32768")
+model = init_chat_model("groq:mixtral-8x7b-32768")
 
 # ===== AGENT NODES =====
 
@@ -217,4 +217,8 @@ agent_builder_mcp.add_edge("compress_research", END)
 
 # Compile the agent
 agent_mcp = agent_builder_mcp.compile()
+
+
+
+
 

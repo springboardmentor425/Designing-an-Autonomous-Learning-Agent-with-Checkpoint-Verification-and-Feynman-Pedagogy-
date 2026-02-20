@@ -45,3 +45,7 @@ class ResearchComplete(BaseModel):
     """Tool for indicating that the research process is complete."""
     pass
 
+
+
+
+

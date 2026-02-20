@@ -24,7 +24,7 @@ from deep_research_from_scratch.multi_agent_supervisor import supervisor_agent
 # ===== Config =====
 
 from langchain.chat_models import init_chat_model
-writer_model = init_chat_model("groq:llama3-8b-8192")
+writer_model = init_chat_model("groq:mixtral-8x7b-32768")
 
 # ===== FINAL REPORT GENERATION =====
 
@@ -86,7 +86,7 @@ from langchain.chat_models import init_chat_model
 
 # --- 1. SETUP MODEL ---
 # Ensure you have your API key set in env: GROQ_API_KEY
-model = init_chat_model("groq:llama3-8b-8192")
+model = init_chat_model("groq:mixtral-8x7b-32768")
 
 # --- 2. DEFINE STATE SCHEMAS ---
 
@@ -442,4 +442,8 @@ class Summary(BaseModel):
     """Schema for webpage content summarization."""
     summary: str = Field(description="Concise summary of the webpage content")
     key_excerpts: str = Field(description="Important quotes and excerpts from the content")
+
+
+
+
 

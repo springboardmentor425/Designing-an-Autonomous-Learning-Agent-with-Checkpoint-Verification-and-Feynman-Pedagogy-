@@ -42,7 +42,7 @@ def get_current_dir() -> Path:
         return Path.cwd()
 
 # ===== CONFIGURATION =====
-summarization_model = init_chat_model("groq:llama3-8b-8192")
+summarization_model = init_chat_model("groq:mixtral-8x7b-32768")
 tavily_client = TavilyClient()
 
 # ===== SEARCH FUNCTIONS =====
@@ -243,4 +243,8 @@ def think_tool(reflection: str = "") -> str:
         Confirmation that reflection was recorded for decision-making
     """
     return f"Reflection recorded: {reflection}"
+
+
+
+
 

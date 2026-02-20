@@ -64,3 +64,7 @@ class Summary(BaseModel):
     summary: str = Field(description="Concise summary of the webpage content")
     key_excerpts: str = Field(description="Important quotes and excerpts from the content")
 
+
+
+
+

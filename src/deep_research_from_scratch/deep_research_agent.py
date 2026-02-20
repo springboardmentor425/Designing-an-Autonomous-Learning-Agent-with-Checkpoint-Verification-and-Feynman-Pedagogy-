@@ -26,7 +26,7 @@ from deep_research_from_scratch.multi_agent_supervisor import supervisor_agent
 # ===== Config =====
 
 from langchain.chat_models import init_chat_model
-writer_model = init_chat_model("groq:llama3-8b-8192")
+writer_model = init_chat_model("groq:mixtral-8x7b-32768")
 
 # ===== FINAL REPORT GENERATION =====
 
@@ -109,4 +109,8 @@ deep_researcher_builder.add_edge("save_report_to_file", END)
 
 # Compile the full workflow
 deep_researcher = deep_researcher_builder.compile()
+
+
+
+
 
