@@ -42,8 +42,7 @@ def get_current_dir() -> Path:
         return Path.cwd()
 
 # ===== CONFIGURATION =====
-
-summarization_model = init_chat_model("groq:llama-3.3-70b-versatile")
+summarization_model = init_chat_model("groq:llama3-8b-8192")
 tavily_client = TavilyClient()
 
 # ===== SEARCH FUNCTIONS =====
@@ -89,8 +88,9 @@ def summarize_webpage_content(webpage_content: str) -> str:
         Formatted summary with key excerpts
     """
     try:
-        # Truncate content to prevent token limit errors (approx 3-4k tokens)
-        truncated_content = webpage_content[:15000]
+        # Truncate content to prevent token limit errors (approx 1-1.5k tokens)
+        # Reduced from 15000 to 5000 to avoid hitting 6000 TPM limit on Groq free tier
+        truncated_content = webpage_content[:5000]
         
         # Set up structured output model for summarization
         structured_model = summarization_model.with_structured_output(Summary)
@@ -218,7 +218,7 @@ def tavily_search(
     return format_search_output(summarized_results)
 
 @tool(parse_docstring=True)
-def think_tool(reflection: str) -> str:
+def think_tool(reflection: str = "") -> str:
     """Tool for strategic reflection on research progress and decision-making.
 
     Use this tool after each search to analyze results and plan next steps systematically.
@@ -243,3 +243,4 @@ def think_tool(reflection: str) -> str:
         Confirmation that reflection was recorded for decision-making
     """
     return f"Reflection recorded: {reflection}"
+

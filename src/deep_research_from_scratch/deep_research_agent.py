@@ -26,7 +26,7 @@ from deep_research_from_scratch.multi_agent_supervisor import supervisor_agent
 # ===== Config =====
 
 from langchain.chat_models import init_chat_model
-writer_model = init_chat_model("groq:llama-3.3-70b-versatile")  # Using Groq for fast, free inference
+writer_model = init_chat_model("groq:llama3-8b-8192")
 
 # ===== FINAL REPORT GENERATION =====
 
@@ -63,24 +63,27 @@ async def save_report_to_file(state: AgentState):
     Save the final report to a file in the 'files' directory.
     
     Uses UUID to generate a unique filename for each report.
+    Uses asyncio.to_thread to avoid blocking the async event loop.
     """
+    import asyncio
     final_report = state.get("final_report", "")
     
     # Get the directory where this module is located
     module_dir = os.path.dirname(os.path.abspath(__file__))
     files_dir = os.path.join(module_dir, "files")
     
-    # Create the files directory if it doesn't exist
-    os.makedirs(files_dir, exist_ok=True)
-    
     # Generate a unique filename using UUID
     report_id = str(uuid.uuid4())
     filename = f"report_{report_id}.md"
     filepath = os.path.join(files_dir, filename)
     
-    # Save the report
-    with open(filepath, "w", encoding="utf-8") as f:
-        f.write(final_report)
+    # Use asyncio.to_thread to avoid blocking the async event loop
+    def write_file():
+        os.makedirs(files_dir, exist_ok=True)
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(final_report)
+    
+    await asyncio.to_thread(write_file)
     
     return {
         "messages": [f"Report saved to: {filepath}"],
@@ -106,3 +109,4 @@ deep_researcher_builder.add_edge("save_report_to_file", END)
 
 # Compile the full workflow
 deep_researcher = deep_researcher_builder.compile()
+

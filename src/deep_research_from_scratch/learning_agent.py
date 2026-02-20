@@ -20,10 +20,12 @@ from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, get_bu
 
 from deep_research_from_scratch.prompts import clarify_with_user_instructions, transform_messages_into_research_topic_prompt
 from deep_research_from_scratch.state_scope import ClarifyWithUser, ResearchQuestion
+from deep_research_from_scratch.retry_utils import invoke_with_retry
 
 # --- 1. SETUP MODEL ---
-# Ensure you have your API key set in env: GOOGLE_API_KEY
-model = init_chat_model("groq:llama-3.3-70b-versatile")
+# Using llama-3.1-8b-instant for chat, llama-3.3-70b-versatile for structured output (better function calling)
+model = init_chat_model("groq:llama3-8b-8192")
+structured_model = init_chat_model("groq:llama-3.3-70b-versatile")
 
 
 # --- 2. UTILITY FUNCTIONS ---
@@ -97,17 +99,17 @@ class EvaluationResult(BaseModel):
 class SimplifiedContent(BaseModel):
     simplified_material: str = Field(description="Simple explanation using Feynman Technique (short, plain language, no jargon)")
 
-# Create Structured LLMs
-structure_gen = model.with_structured_output(CheckpointResponse)
-content_gen = model.with_structured_output(CheckpointContent)
-evaluator_gen = model.with_structured_output(EvaluationResult)
-simplified_gen = model.with_structured_output(SimplifiedContent)
+# Create Structured LLMs — using Gemini for reliable function calling
+structure_gen = structured_model.with_structured_output(CheckpointResponse)
+content_gen = structured_model.with_structured_output(CheckpointContent)
+evaluator_gen = structured_model.with_structured_output(EvaluationResult)
+simplified_gen = structured_model.with_structured_output(SimplifiedContent)
 
 
 # --- 5. DEFINE NODES ---
 
 def load_report(state: State):
-    """Node 0: Loads the latest markdown file from the files directory."""
+    """Node 0: Finds the most relevant report for the user's topic, or falls back to latest."""
     print("--- Loading Report from Files Directory ---")
     
     # Get the files directory path (relative to this module)
@@ -122,13 +124,45 @@ def load_report(state: State):
     if not md_files:
         raise FileNotFoundError(f"No markdown files found in: {files_dir}")
     
-    # Get the latest file by modification time
-    latest_file = max(md_files, key=lambda f: f.stat().st_mtime)
+    # Extract user's topic keywords from the first human message
+    user_topic = ""
+    for msg in state.get("messages", []):
+        if hasattr(msg, "type") and msg.type == "human":
+            user_topic = msg.content.lower()
+            break
+        elif isinstance(msg, dict) and msg.get("role") == "human":
+            user_topic = msg.get("content", "").lower()
+            break
     
-    print(f"Loading file: {latest_file.name}")
+    # Try to find the most relevant report by scanning file content (first 500 chars)
+    best_file = None
+    best_score = 0
+    
+    if user_topic:
+        # Extract meaningful keywords (words > 3 chars, skip common words)
+        stop_words = {"what", "about", "tell", "me", "want", "learn", "explain", "please", "can", "you", "the", "and", "for", "how", "does", "is", "are", "will", "would", "that", "this", "with"}
+        keywords = [w for w in user_topic.split() if len(w) > 3 and w not in stop_words]
+        
+        if keywords:
+            for f in md_files:
+                try:
+                    preview = f.read_text(encoding="utf-8")[:500].lower()
+                    score = sum(1 for kw in keywords if kw in preview)
+                    if score > best_score:
+                        best_score = score
+                        best_file = f
+                except Exception:
+                    continue
+    
+    # Fall back to most recently modified file if no keyword match found
+    if best_file is None or best_score == 0:
+        best_file = max(md_files, key=lambda f: f.stat().st_mtime)
+        print(f"No topic match found. Loading latest file: {best_file.name}")
+    else:
+        print(f"Best topic match (score={best_score}): {best_file.name}")
     
     # Read the file content
-    report_content = latest_file.read_text(encoding="utf-8")
+    report_content = best_file.read_text(encoding="utf-8")
     
     return {"report": report_content}
 
@@ -142,11 +176,13 @@ def clarify_with_user(state: State) -> Command[Literal["write_research_brief", "
     """
     print("--- Clarifying with User ---")
     
+
+    
     # Set up structured output model
     structured_output_model = model.with_structured_output(ClarifyWithUser)
     
     # Invoke the model with clarification instructions
-    response = structured_output_model.invoke([
+    response = invoke_with_retry(structured_output_model, [
         HumanMessage(content=clarify_with_user_instructions.format(
             messages=get_buffer_string(messages=state["messages"]), 
             date=get_today_str()
@@ -200,7 +236,9 @@ def generate_structure(state: State):
     """Node 1: Breaks the report down into topics (No content yet)."""
     print("--- Generating Structure ---")
     report = state['report']
-    response = structure_gen.invoke(f"Extract learning checkpoints from this report: {report}")
+    # Truncate report to avoid token limits on structured output calls
+    report_excerpt = report[:4000] if len(report) > 4000 else report
+    response = structure_gen.invoke(f"Extract 3-5 key learning checkpoints from this research report. Each checkpoint should be a distinct topic or concept.\n\nReport:\n{report_excerpt}")
     
     clean_checkpoints = []
     for item in response.checkpoints:
@@ -227,8 +265,9 @@ def create_content(state: State):
     user_req = state['user_request']
     checkpoints = state['checkpoints']
     
-    # Prepare Batch Prompts
-    prompts = []
+    updated_checkpoints = []
+    
+    # Process checkpoints sequentially with retry logic to avoid rate limits and improve robustness
     for cp in checkpoints:
         prompt = f"""You are creating educational content for a learning checkpoint.
 
@@ -243,26 +282,24 @@ REQUIREMENTS:
 1. Create a clear, concise study material (approximately 100 words) that explains the key concepts of this checkpoint
 2. Create EXACTLY 3 assessment questions that test understanding of the study material
 
-IMPORTANT: Your response MUST include both fields:
-- study_material: The explanation text
-- quiz_questions: A list of exactly 3 questions (as strings)
-
-Example format:
-- study_material: "Python is a high-level programming language..."
-- quiz_questions: ["What is X?", "Explain Y?", "How does Z work?"]
-
-Now create the content:"""
-        prompts.append(prompt)
-    
-    # Run Batch
-    results = content_gen.batch(prompts)
-    
-    # Map back to state
-    updated_checkpoints = []
-    for cp, res in zip(checkpoints, results):
-        cp['study_material'] = res.study_material
-        cp['quiz_questions'] = res.quiz_questions
-        updated_checkpoints.append(cp)
+IMPORTANT:
+- Ensure the questions directly relate to the study material provided.
+- Do not provide answers, just the questions.
+"""
+        try:
+            # Use invoke_with_retry for robustness
+            res = invoke_with_retry(content_gen, prompt)
+            
+            cp['study_material'] = res.study_material
+            cp['quiz_questions'] = res.quiz_questions
+            updated_checkpoints.append(cp)
+            
+        except Exception as e:
+            print(f"Error generating content for checkpoint '{cp['name']}': {e}")
+            # Fallback for failed generation
+            cp['study_material'] = "Content generation failed. Please refer to the full report."
+            cp['quiz_questions'] = ["What is the main topic of this section?", "List three key points.", "Summarize the content."]
+            updated_checkpoints.append(cp)
         
     return {"checkpoints": updated_checkpoints}
 
@@ -433,3 +470,4 @@ builder.add_conditional_edges(
 )
 
 learning_agent = builder.compile()
+

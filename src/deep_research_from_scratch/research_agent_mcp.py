@@ -53,8 +53,8 @@ def get_mcp_client():
     return _client
 
 # Initialize models
-compress_model = init_chat_model("groq:llama-3.3-70b-versatile")
-model = init_chat_model("groq:llama-3.3-70b-versatile")
+compress_model = init_chat_model("groq:llama3-8b-8192")
+model = init_chat_model("groq:llama3-8b-8192")
 
 # ===== AGENT NODES =====
 
@@ -71,6 +71,7 @@ async def llm_call(state: ResearcherState):
     # Get available tools from MCP server
     client = get_mcp_client()
     mcp_tools = await client.get_tools()
+    print(f"MCP Tools fetched: {[t.name for t in mcp_tools]}")
 
     # Use MCP tools for local document access
     tools = mcp_tools + [think_tool]
@@ -79,10 +80,15 @@ async def llm_call(state: ResearcherState):
     model_with_tools = model.bind_tools(tools)
 
     # Process user input with system prompt
+
+    # Explicitly instruct model on proper tool usage for list_directory
+    prompt = research_agent_prompt_with_mcp.format(date=get_today_str())
+    prompt += "\nIMPORTANT: When using the 'list_directory' tool, you MUST provide the 'path' argument. Use '.' for the current directory."
+
     return {
         "researcher_messages": [
             model_with_tools.invoke(
-                [SystemMessage(content=research_agent_prompt_with_mcp.format(date=get_today_str()))] + state["researcher_messages"]
+                [SystemMessage(content=prompt)] + state["researcher_messages"]
             )
         ]
     }
@@ -111,13 +117,18 @@ async def tool_node(state: ResearcherState):
         # Execute tool calls (sequentially for reliability)
         observations = []
         for tool_call in tool_calls:
-            tool = tools_by_name[tool_call["name"]]
-            if tool_call["name"] == "think_tool":
-                # think_tool is sync, use regular invoke
-                observation = tool.invoke(tool_call["args"])
-            else:
-                # MCP tools are async, use ainvoke
-                observation = await tool.ainvoke(tool_call["args"])
+            try:
+                tool = tools_by_name[tool_call["name"]]
+                if tool_call["name"] == "think_tool":
+                    # think_tool is sync, use regular invoke
+                    observation = tool.invoke(tool_call["args"])
+                else:
+                    # MCP tools are async, use ainvoke
+                    observation = await tool.ainvoke(tool_call["args"])
+            except Exception as e:
+                # Catch tool errors (including directory access denied) and return as observation
+                observation = f"Error executing tool {tool_call['name']}: {str(e)}"
+            
             observations.append(observation)
 
         # Format results as tool messages
@@ -206,3 +217,4 @@ agent_builder_mcp.add_edge("compress_research", END)
 
 # Compile the agent
 agent_mcp = agent_builder_mcp.compile()
+

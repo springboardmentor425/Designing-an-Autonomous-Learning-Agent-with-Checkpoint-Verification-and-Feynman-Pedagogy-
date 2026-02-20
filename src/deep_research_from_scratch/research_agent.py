@@ -15,6 +15,7 @@ from langchain.chat_models import init_chat_model
 from deep_research_from_scratch.state_research import ResearcherState, ResearcherOutputState
 from deep_research_from_scratch.utils import tavily_search, get_today_str, think_tool
 from deep_research_from_scratch.prompts import research_agent_prompt, compress_research_system_prompt, compress_research_human_message
+from deep_research_from_scratch.retry_utils import invoke_with_retry
 
 # ===== CONFIGURATION =====
 
@@ -23,10 +24,11 @@ tools = [tavily_search, think_tool]
 tools_by_name = {tool.name: tool for tool in tools}
 
 # Initialize models
-model = init_chat_model("groq:llama-3.3-70b-versatile")
+# Initialize models
+model = init_chat_model("groq:llama3-8b-8192")
 model_with_tools = model.bind_tools(tools)
-summarization_model = init_chat_model("groq:llama-3.3-70b-versatile")
-compress_model = init_chat_model("groq:llama-3.3-70b-versatile") # model="anthropic:claude-sonnet-4-20250514", max_tokens=64000
+summarization_model = init_chat_model("groq:llama3-8b-8192")
+compress_model = init_chat_model("groq:llama3-8b-8192")
 
 # ===== AGENT NODES =====
 
@@ -41,7 +43,8 @@ def llm_call(state: ResearcherState):
     """
     return {
         "researcher_messages": [
-            model_with_tools.invoke(
+            invoke_with_retry(
+                model_with_tools,
                 [SystemMessage(content=research_agent_prompt)] + state["researcher_messages"]
             )
         ]
@@ -142,3 +145,4 @@ agent_builder.add_edge("compress_research", END)
 
 # Compile the agent
 researcher_agent = agent_builder.compile()
+
