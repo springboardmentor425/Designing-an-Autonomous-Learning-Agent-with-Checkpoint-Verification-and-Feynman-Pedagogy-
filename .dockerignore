@@ -1,0 +1,83 @@
+# ============================================
+# Docker Ignore File
+# Exclude files not needed in Docker image
+# ============================================
+
+# Git
+.git
+.gitignore
+
+# Python cache and bytecode
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
+eggs/
+*.egg
+.eggs/
+
+# Test and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Environment files (will use env_file in compose)
+# Note: We DO want .env in compose, but not baked into image
+# .env
+
+# LangGraph API cache
+.langgraph_api/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Package lock files (we use pyproject.toml)
+poetry.lock
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Local development files
+*.local
+.local/
+
+# Docker files (no need to copy these into the image)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
