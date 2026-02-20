@@ -25,10 +25,10 @@ tools_by_name = {tool.name: tool for tool in tools}
 
 # Initialize models
 # Initialize models
-model = init_chat_model("groq:mixtral-8x7b-32768")
+model = init_chat_model("groq:llama-3.3-70b-versatile")
 model_with_tools = model.bind_tools(tools)
-summarization_model = init_chat_model("groq:mixtral-8x7b-32768")
-compress_model = init_chat_model("groq:mixtral-8x7b-32768")
+summarization_model = init_chat_model("groq:llama-3.3-70b-versatile")
+compress_model = init_chat_model("groq:llama-3.3-70b-versatile")
 
 # ===== AGENT NODES =====
 
@@ -145,6 +145,7 @@ agent_builder.add_edge("compress_research", END)
 
 # Compile the agent
 researcher_agent = agent_builder.compile()
+
 
 
 

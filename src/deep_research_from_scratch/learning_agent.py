@@ -24,7 +24,7 @@ from deep_research_from_scratch.retry_utils import invoke_with_retry
 
 # --- 1. SETUP MODEL ---
 # Using llama-3.1-8b-instant for chat, llama-3.3-70b-versatile for structured output (better function calling)
-model = init_chat_model("groq:mixtral-8x7b-32768")
+model = init_chat_model("groq:llama-3.3-70b-versatile")
 structured_model = init_chat_model("groq:llama-3.3-70b-versatile")
 
 
@@ -470,6 +470,7 @@ builder.add_conditional_edges(
 )
 
 learning_agent = builder.compile()
+
 
 
 
