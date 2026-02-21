@@ -20,6 +20,7 @@ dependencies = [
     "pandas>=2.3.3",
     "traitlets==5.9.0",
     "langchain-groq>=0.1.0",
+    "langgraph-cli[inmem]>=0.4.12",
 ]
 
 [project.optional-dependencies]
