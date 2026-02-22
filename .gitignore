@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+venv/
+.env
+__pycache__/
+=======
 # Environment
 .env
 .env.*
@@ -60,3 +65,4 @@ htmlcov/
 
 # Node modules (if any)
 node_modules/
+>>>>>>> main
