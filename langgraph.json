@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {
     "dockerfile_lines": [],
     "graphs": {
@@ -15,4 +16,23 @@
     "dependencies": [
       "."
     ]
+=======
+{
+    "dockerfile_lines": [],
+    "graphs": {
+
+      "scope_research": "./src/deep_research_from_scratch/research_agent_scope.py:scope_research",
+      "research_agent": "./src/deep_research_from_scratch/research_agent.py:researcher_agent",
+      "research_agent_mcp": "./src/deep_research_from_scratch/research_agent_mcp.py:agent_mcp",
+      "research_agent_supervisor": "./src/deep_research_from_scratch/multi_agent_supervisor.py:supervisor_agent",
+      "research_agent_full": "./src/deep_research_from_scratch/research_agent_full.py:agent",
+      "learning_agent": "./src/deep_research_from_scratch/learning_agent.py:learning_agent",
+      "deep_researcher": "./src/deep_research_from_scratch/deep_research_agent.py:deep_researcher"
+    },
+    "python_version": "3.11",
+    "env": ".env",
+    "dependencies": [
+      "."
+    ]
+>>>>>>> main
   }
