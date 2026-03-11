@@ -1,4 +1,4 @@
-# 🤖🧠📚 Designing an Autonomous Learning Agent with Checkpoint Verification and Feynman Pedagogy
+# 🧠 Designing an Autonomous Learning Agent with Checkpoint Verification and Feynman Pedagogy
 
 This project explores the design of an autonomous AI learning agent that guides users through structured learning pathways using checkpoint-based verification and the Feynman teaching technique. The system supports mastery-based progression by assessing understanding at each stage and simplifying explanations when learners struggle. By combining automated assessment with adaptive teaching, it aims to create a personalized and effective AI-powered tutoring experience.
 
