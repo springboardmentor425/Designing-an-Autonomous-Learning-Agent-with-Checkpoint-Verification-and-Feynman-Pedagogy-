@@ -19,6 +19,7 @@ from langgraph.types import Command
 
 from deep_research_from_scratch.prompts import clarify_with_user_instructions, transform_messages_into_research_topic_prompt
 from deep_research_from_scratch.state_scope import AgentState, ClarifyWithUser, ResearchQuestion, AgentInputState
+from deep_research_from_scratch.retry_utils import invoke_with_retry
 
 # ===== UTILITY FUNCTIONS =====
 
@@ -32,7 +33,7 @@ def get_today_str() -> str:
 # ===== CONFIGURATION =====
 
 # Initialize model
-model = init_chat_model("google_genai:models/gemini-2.5-flash")
+model = init_chat_model("groq:llama-3.3-70b-versatile")
 
 # ===== WORKFLOW NODES =====
 
@@ -46,13 +47,14 @@ def clarify_with_user(state: AgentState) -> Command[Literal["write_research_brie
     # Set up structured output model
     structured_output_model = model.with_structured_output(ClarifyWithUser)
 
-    # Invoke the model with clarification instructions
-    response = structured_output_model.invoke([
-        HumanMessage(content=clarify_with_user_instructions.format(
+    # Invoke the model with clarification instructions using retry logic
+    response = invoke_with_retry(
+        structured_output_model,
+        [HumanMessage(content=clarify_with_user_instructions.format(
             messages=get_buffer_string(messages=state["messages"]), 
             date=get_today_str()
-        ))
-    ])
+        ))]
+    )
 
     # Route based on clarification need
     if response.need_clarification:
@@ -76,13 +78,14 @@ def write_research_brief(state: AgentState):
     # Set up structured output model
     structured_output_model = model.with_structured_output(ResearchQuestion)
 
-    # Generate research brief from conversation history
-    response = structured_output_model.invoke([
-        HumanMessage(content=transform_messages_into_research_topic_prompt.format(
+    # Generate research brief from conversation history using retry logic
+    response = invoke_with_retry(
+        structured_output_model,
+        [HumanMessage(content=transform_messages_into_research_topic_prompt.format(
             messages=get_buffer_string(state.get("messages", [])),
             date=get_today_str()
-        ))
-    ])
+        ))]
+    )
 
     # Update state with generated research brief and pass it to the supervisor
     return {

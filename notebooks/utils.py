@@ -79,3 +79,51 @@ def show_prompt(prompt_text: str, title: str = "Prompt", border_style: str = "bl
         border_style=border_style,
         padding=(1, 2)
     ))
+
+# Windows subprocess patch for Jupyter
+# This patches subprocess.Popen to avoid "UnsupportedOperation: fileno" errors
+# when running in environments like Jupyter that capture stdout/stderr.
+import sys
+import subprocess
+import os
+
+if sys.platform == 'win32':
+    # Store original Popen to avoid infinite recursion if reloaded
+    if not hasattr(subprocess, '_original_Popen'):
+        subprocess._original_Popen = subprocess.Popen
+
+    class SafePopen(subprocess._original_Popen):
+        def __init__(self, *args, **kwargs):
+            # Check stderr
+            if 'stderr' in kwargs:
+                stderr = kwargs['stderr']
+                # If stderr is a stream but not a valid OS handle (like Jupyter's OutStream), fileno() fails.
+                # We check this and fallback to DEVNULL.
+                if stderr is not None and stderr != subprocess.PIPE and stderr != subprocess.STDOUT and stderr != subprocess.DEVNULL:
+                    try:
+                        stderr.fileno()
+                    except Exception:
+                        # Fallback to DEVNULL if fileno() is not supported (e.g. Jupyter)
+                        kwargs['stderr'] = subprocess.DEVNULL
+            
+            # Check stdout
+            if 'stdout' in kwargs:
+                stdout = kwargs['stdout']
+                if stdout is not None and stdout != subprocess.PIPE and stdout != subprocess.DEVNULL:
+                    try:
+                        stdout.fileno()
+                    except Exception:
+                        kwargs['stdout'] = subprocess.DEVNULL
+            
+            # Check stdin
+            if 'stdin' in kwargs:
+                stdin = kwargs['stdin']
+                if stdin is not None and stdin != subprocess.PIPE and stdin != subprocess.DEVNULL:
+                    try:
+                        stdin.fileno()
+                    except Exception:
+                        kwargs['stdin'] = subprocess.DEVNULL
+
+            super().__init__(*args, **kwargs)
+
+    subprocess.Popen = SafePopen

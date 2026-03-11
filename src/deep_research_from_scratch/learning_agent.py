@@ -20,10 +20,11 @@ from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, get_bu
 
 from deep_research_from_scratch.prompts import clarify_with_user_instructions, transform_messages_into_research_topic_prompt
 from deep_research_from_scratch.state_scope import ClarifyWithUser, ResearchQuestion
+from deep_research_from_scratch.retry_utils import invoke_with_retry
 
 # --- 1. SETUP MODEL ---
-# Ensure you have your API key set in env: GOOGLE_API_KEY
-model = init_chat_model("google_genai:models/gemini-2.5-flash-lite")
+# Ensure you have your API key set in env: GROQ_API_KEY
+model = init_chat_model("groq:llama-3.3-70b-versatile")
 
 
 # --- 2. UTILITY FUNCTIONS ---
@@ -146,7 +147,7 @@ def clarify_with_user(state: State) -> Command[Literal["write_research_brief", "
     structured_output_model = model.with_structured_output(ClarifyWithUser)
     
     # Invoke the model with clarification instructions
-    response = structured_output_model.invoke([
+    response = invoke_with_retry(structured_output_model, [
         HumanMessage(content=clarify_with_user_instructions.format(
             messages=get_buffer_string(messages=state["messages"]), 
             date=get_today_str()
@@ -180,7 +181,7 @@ def write_research_brief(state: State):
     structured_output_model = model.with_structured_output(ResearchQuestion)
     
     # Generate research brief from conversation history
-    response = structured_output_model.invoke([
+    response = invoke_with_retry(structured_output_model, [
         HumanMessage(content=transform_messages_into_research_topic_prompt.format(
             messages=get_buffer_string(state.get("messages", [])),
             date=get_today_str()
@@ -200,8 +201,20 @@ def generate_structure(state: State):
     """Node 1: Breaks the report down into topics (No content yet)."""
     print("--- Generating Structure ---")
     report = state['report']
-    response = structure_gen.invoke(f"Extract learning checkpoints from this report: {report}")
-    
+
+    # Truncate report to reduce token usage
+    report_excerpt = report[:4000] if len(report) > 4000 else report
+
+    prompt = f"""
+Extract EXACTLY 3 learning checkpoints from this research report.
+Each checkpoint should represent a distinct concept or topic that can be learned independently.
+
+Report:
+{report_excerpt}
+"""
+
+    response = invoke_with_retry(structure_gen, prompt)
+
     clean_checkpoints = []
     for item in response.checkpoints:
         data = item.model_dump()
@@ -221,18 +234,18 @@ def generate_structure(state: State):
 
 
 def create_content(state: State):
-    """Node 2: Generates study material and questions in PARALLEL (Batch)."""
-    print("--- Creating Content (Batch) ---")
-    report = state['report']
+    """Node 2: Generates study material and questions for each checkpoint."""
+    print("--- Creating Content ---")
+
     user_req = state['user_request']
     checkpoints = state['checkpoints']
     
-    # Prepare Batch Prompts
-    prompts = []
+    # Run with retry protection
+    results = []
+    
     for cp in checkpoints:
         prompt = f"""You are creating educational content for a learning checkpoint.
 
-Report Context: {report}
 User Goal: {user_req}
 
 Checkpoint Details:
@@ -252,10 +265,9 @@ Example format:
 - quiz_questions: ["What is X?", "Explain Y?", "How does Z work?"]
 
 Now create the content:"""
-        prompts.append(prompt)
     
-    # Run Batch
-    results = content_gen.batch(prompts)
+        res = invoke_with_retry(content_gen, prompt)
+        results.append(res)
     
     # Map back to state
     updated_checkpoints = []
@@ -314,7 +326,7 @@ def evaluate_submission(state: State):
     Answers: {current_cp['user_answers']}
     Rubric: Pass mark is 70.
     """
-    result = evaluator_gen.invoke(prompt)
+    result = invoke_with_retry(evaluator_gen, prompt)
     
     # Save Result
     current_cp["score"] = result.score
@@ -365,7 +377,7 @@ FEYNMAN TECHNIQUE RULES:
 
 Create a simplified explanation that helps the student understand the concept:"""
     
-    result = simplified_gen.invoke(prompt)
+    result = invoke_with_retry(simplified_gen, prompt)
     
     # Save the simplified material
     current_cp["simplified_material"] = result.simplified_material

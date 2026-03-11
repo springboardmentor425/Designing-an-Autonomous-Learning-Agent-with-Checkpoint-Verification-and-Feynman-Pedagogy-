@@ -53,8 +53,8 @@ def get_mcp_client():
     return _client
 
 # Initialize models
-compress_model = init_chat_model("google_genai:models/gemini-flash-latest")
-model = init_chat_model("google_genai:models/gemini-flash-latest")
+compress_model = init_chat_model("groq:llama-3.3-70b-versatile")
+model = init_chat_model("groq:llama-3.3-70b-versatile")
 
 # ===== AGENT NODES =====
 

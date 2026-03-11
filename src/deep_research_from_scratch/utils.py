@@ -43,7 +43,7 @@ def get_current_dir() -> Path:
 
 # ===== CONFIGURATION =====
 
-summarization_model = init_chat_model("google_genai:models/gemini-flash-latest")
+summarization_model = init_chat_model("groq:llama-3.3-70b-versatile")
 tavily_client = TavilyClient()
 
 # ===== SEARCH FUNCTIONS =====
@@ -89,13 +89,17 @@ def summarize_webpage_content(webpage_content: str) -> str:
         Formatted summary with key excerpts
     """
     try:
+        # Truncate content to prevent token limit errors (approx 1-1.5k tokens)
+        # Reduced from 15000 to 5000 to avoid hitting 6000 TPM limit on Groq free tier
+        truncated_content = webpage_content[:5000]
+
         # Set up structured output model for summarization
         structured_model = summarization_model.with_structured_output(Summary)
 
         # Generate summary
         summary = structured_model.invoke([
             HumanMessage(content=summarize_webpage_prompt.format(
-                webpage_content=webpage_content, 
+                webpage_content=truncated_content, 
                 date=get_today_str()
             ))
         ])

@@ -1,5 +1,10 @@
+# 🤖🧠📚 Designing an Autonomous Learning Agent with Checkpoint Verification and Feynman Pedagogy
 
-##  Quickstart 
+This project explores the design of an autonomous AI learning agent that guides users through structured learning pathways using checkpoint-based verification and the Feynman teaching technique. The system supports mastery-based progression by assessing understanding at each stage and simplifying explanations when learners struggle. By combining automated assessment with adaptive teaching, it aims to create a personalized and effective AI-powered tutoring experience.
+
+---
+
+## 🚀 Quick Start
 
 ### Option 1: Docker (Recommended)
 
@@ -9,11 +14,11 @@ The fastest way to get started is using Docker. This includes all dependencies (
 - [Docker](https://docs.docker.com/get-docker/) installed on your system
 - [Docker Compose](https://docs.docker.com/compose/install/) (usually included with Docker Desktop)
 
-#### Quick Start
+#### Installation
 
 1. **Clone the repository:**
 ```bash
-git clone https://github.com/springboardmentor425/Designing-an-Autonomous-Learning-Agent-with-Checkpoint-Verification-and-Feynman-Pedagogy---Group-2.git
+git clone https://github.com/springboardmentor425/Designing-an-Autonomous-Learning-Agent-with-Checkpoint-Verification-and-Feynman-Pedagogy-.git
 cd deep_research_from_scratch
 ```
 
@@ -28,10 +33,14 @@ Edit `.env` and add your API keys:
 # Required for research agents with external search
 TAVILY_API_KEY=your_tavily_api_key_here
 
-# Required for Google Gemini models
+# Required for Google Gemini models (primary model used)
 GOOGLE_API_KEY=your_google_api_key_here
 
-# Optional: For LangSmith tracing
+# Required for Groq models (used in research agent)
+GROQ_API_KEY=your_groq_api_key_here
+
+# Optional: For LangSmith evaluation and tracing
+LANGSMITH_API_KEY=your_langsmith_api_key_here
 LANGSMITH_TRACING=true
 LANGSMITH_PROJECT=deep_research_from_scratch
 ```
@@ -147,10 +156,14 @@ Add your API keys to the `.env` file:
 # Required for research agents with external search
 TAVILY_API_KEY=your_tavily_api_key_here
 
-# Required for Google Gemini models
+# Required for Google Gemini models (primary model used)
 GOOGLE_API_KEY=your_google_api_key_here
 
-# Optional: For LangSmith tracing
+# Required for Groq models (used in research agent)
+GROQ_API_KEY=your_groq_api_key_here
+
+# Optional: For LangSmith evaluation and tracing
+LANGSMITH_API_KEY=your_langsmith_api_key_here
 LANGSMITH_TRACING=true
 LANGSMITH_PROJECT=deep_research_from_scratch
 ```
@@ -169,6 +182,8 @@ uv run jupyter notebook
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 jupyter notebook
 ```
+
+---
 
 ## Background  
 
@@ -292,4 +307,4 @@ This repo contains 5 tutorial notebooks that build a deep research system from s
 - **State Management**: Complex state flows across subgraphs and nodes
 - **Protocol Integration**: MCP servers and tool ecosystems
 
-Each notebook builds on the previous concepts, culminating in a production-ready deep research system that can handle complex, multi-faceted research queries with intelligent scoping and coordinated execution. 
+Each notebook builds on the previous concepts, culminating in a production-ready deep research system that can handle complex, multi-faceted research queries with intelligent scoping and coordinated execution.

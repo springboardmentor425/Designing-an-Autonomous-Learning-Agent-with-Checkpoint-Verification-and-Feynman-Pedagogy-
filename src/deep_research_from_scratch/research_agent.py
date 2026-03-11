@@ -15,6 +15,7 @@ from langchain.chat_models import init_chat_model
 from deep_research_from_scratch.state_research import ResearcherState, ResearcherOutputState
 from deep_research_from_scratch.utils import tavily_search, get_today_str, think_tool
 from deep_research_from_scratch.prompts import research_agent_prompt, compress_research_system_prompt, compress_research_human_message
+from deep_research_from_scratch.retry_utils import invoke_with_retry
 
 # ===== CONFIGURATION =====
 
@@ -23,10 +24,10 @@ tools = [tavily_search, think_tool]
 tools_by_name = {tool.name: tool for tool in tools}
 
 # Initialize models
-model = init_chat_model("google_genai:models/gemini-flash-latest")
+model = init_chat_model("groq:llama-3.3-70b-versatile")
 model_with_tools = model.bind_tools(tools)
-summarization_model = init_chat_model("google_genai:models/gemini-flash-latest")
-compress_model = init_chat_model("google_genai:models/gemini-flash-latest") # model="anthropic:claude-sonnet-4-20250514", max_tokens=64000
+summarization_model = init_chat_model("groq:llama-3.3-70b-versatile")
+compress_model = init_chat_model("groq:llama-3.3-70b-versatile") # model="anthropic:claude-sonnet-4-20250514", max_tokens=64000
 
 # ===== AGENT NODES =====
 
@@ -39,13 +40,12 @@ def llm_call(state: ResearcherState):
 
     Returns updated state with the model's response.
     """
-    return {
-        "researcher_messages": [
-            model_with_tools.invoke(
-                [SystemMessage(content=research_agent_prompt)] + state["researcher_messages"]
-            )
-        ]
-    }
+    prev_messages = state.get("researcher_messages", [])
+    ai_response = invoke_with_retry(
+        model_with_tools,
+        [SystemMessage(content=research_agent_prompt)] + prev_messages
+    )
+    return {"researcher_messages": [ai_response]}
 
 def tool_node(state: ResearcherState):
     """Execute all tool calls from the previous LLM response.

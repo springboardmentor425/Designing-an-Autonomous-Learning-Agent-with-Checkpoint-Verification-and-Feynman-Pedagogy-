@@ -33,6 +33,7 @@ from deep_research_from_scratch.state_multi_agent_supervisor import (
     ResearchComplete
 )
 from deep_research_from_scratch.utils import get_today_str, think_tool
+from deep_research_from_scratch.retry_utils import ainvoke_with_retry
 
 def get_notes_from_tool_calls(messages: list[BaseMessage]) -> list[str]:
     """Extract research notes from ToolMessage objects in supervisor message history.
@@ -68,7 +69,7 @@ except ImportError:
 # ===== CONFIGURATION =====
 
 supervisor_tools = [ConductResearch, ResearchComplete, think_tool]
-supervisor_model = init_chat_model("google_genai:models/gemini-flash-latest")
+supervisor_model = init_chat_model("groq:llama-3.3-70b-versatile")
 supervisor_model_with_tools = supervisor_model.bind_tools(supervisor_tools)
 
 # System constants
@@ -107,7 +108,7 @@ async def supervisor(state: SupervisorState) -> Command[Literal["supervisor_tool
     messages = [SystemMessage(content=system_message)] + supervisor_messages
 
     # Make decision about next research steps
-    response = await supervisor_model_with_tools.ainvoke(messages)
+    response = await ainvoke_with_retry(supervisor_model_with_tools, messages)
 
     return Command(
         goto="supervisor_tools",
