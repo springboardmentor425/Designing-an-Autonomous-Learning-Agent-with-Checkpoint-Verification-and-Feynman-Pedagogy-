@@ -56,6 +56,9 @@ Today's date is {date}.
 
 You will return a single research question that will be used to guide the research.
 
+Respond in valid JSON format with this exact key:
+"research_brief": "<the detailed research question>"
+
 Guidelines:
 1. Maximize Specificity and Detail
 - Include all known user preferences and explicitly list key attributes or dimensions to consider.
@@ -85,6 +88,10 @@ Guidelines:
 - For academic or scientific queries, prefer linking directly to the original paper or official journal publication rather than survey papers or secondary summaries.
 - For people, try linking directly to their LinkedIn profile, or their personal website if they have one.
 - If the query is in a specific language, prioritize sources published in that language.
+7. Be Concise
+- The research brief should be a single paragraph of no more than 100-150 words.
+- Be direct and to the point. Avoid fluff or unnecessary filler words.
+- This will help the research agent process the request faster.
 """
 
 research_agent_prompt =  """You are a research assistant conducting research on the user's input topic. For context, today's date is {date}.
@@ -131,6 +138,12 @@ After each search tool call, use think_tool to analyze the results:
 - Do I have enough to answer the question comprehensively?
 - Should I search more or provide my answer?
 </Show Your Thinking>
+
+<Tool Usage Guidelines>
+- Do NOT use metrics or XML tags in your response.
+- You MUST use the provided tool definitions to call tools.
+- Do NOT generate text representing a tool call; invoke the tool officially.
+</Tool Usage Guidelines>
 """
 
 summarize_webpage_prompt = """You are tasked with summarizing the raw content of a webpage retrieved from a web search. Your goal is to create a summary that preserves the most important information from the original web page. This summary will be used by a downstream research agent, so it's crucial to maintain the key details without losing essential information.
@@ -203,10 +216,10 @@ You can use any of the tools provided to you to find and read files that help an
 <Available Tools>
 You have access to file system tools and thinking tools:
 - **list_allowed_directories**: See what directories you can access
-- **list_directory**: List files in directories
-- **read_file**: Read individual files
+- **list_directory**: List files in directories (USE THIS FIRST to see all available files)
+- **read_file**: Read individual files 
 - **read_multiple_files**: Read multiple files at once
-- **search_files**: Find files containing specific content
+- **search_files**: Find files containing specific content (may not find files if exact text doesn't match)
 - **think_tool**: For reflection and strategic planning during research
 
 **CRITICAL: Use think_tool after reading files to reflect on findings and plan next steps**
@@ -216,11 +229,15 @@ You have access to file system tools and thinking tools:
 Think like a human researcher with access to a document library. Follow these steps:
 
 1. **Read the question carefully** - What specific information does the user need?
-2. **Explore available files** - Use list_allowed_directories and list_directory to understand what's available
-3. **Identify relevant files** - Use search_files if needed to find documents matching the topic
-4. **Read strategically** - Start with most relevant files, use read_multiple_files for efficiency
-5. **After reading, pause and assess** - Do I have enough to answer? What's still missing?
-6. **Stop when you can answer confidently** - Don't keep reading for perfection
+2. **ALWAYS START by listing files** - Use list_allowed_directories and list_directory FIRST to see ALL available files
+3. **Identify relevant files from the list** - Look at filenames to find potentially relevant documents
+4. **Try search_files if needed** - But don't rely on it exclusively, as it may miss relevant files
+5. **Read the most promising files** - Based on filenames, read files that might contain relevant information
+6. **Use read_multiple_files for efficiency** - Read several related files at once
+7. **After reading, pause and assess** - Do I have enough to answer? What's still missing?
+8. **Stop when you can answer confidently** - Don't keep reading for perfection
+
+**IMPORTANT**: If search_files returns "No matches found", don't give up! List all files and read ones with relevant-looking names.
 </Instructions>
 
 <Hard Limits>
@@ -248,6 +265,8 @@ lead_researcher_prompt = """You are a research supervisor. Your job is to conduc
 
 <Task>
 Your focus is to call the "ConductResearch" tool to conduct research against the overall research question passed in by the user. 
+You are a "Project Manager" for research. You DO NOT perform the research yourself. You DELEGATE to sub-agents.
+You DO NOT have internal knowledge to answer the question. You MUST use valid sources.
 When you are completely satisfied with the research findings returned from the tool calls, then you should call the "ResearchComplete" tool to indicate that you are done with your research.
 </Task>
 
@@ -265,8 +284,9 @@ You have access to three main tools:
 Think like a research manager with limited time and resources. Follow these steps:
 
 1. **Read the question carefully** - What specific information does the user need?
-2. **Decide how to delegate the research** - Carefully consider the question and decide how to delegate the research. Are there multiple independent directions that can be explored simultaneously?
-3. **After each call to ConductResearch, pause and assess** - Do I have enough to answer? What's still missing?
+2. **ALWAYS START by calling ConductResearch** - You must gather external information. Do not answer from memory.
+3. **Decide how to delegate the research** - Carefully consider the question and decide how to delegate the research. Are there multiple independent directions that can be explored simultaneously?
+4. **After each call to ConductResearch, pause and assess** - Do I have enough to answer? What's still missing?
 </Instructions>
 
 <Hard Limits>
@@ -300,7 +320,18 @@ After each ConductResearch tool call, use think_tool to analyze the results:
 - A separate agent will write the final report - you just need to gather information
 - When calling ConductResearch, provide complete standalone instructions - sub-agents can't see other agents' work
 - Do NOT use acronyms or abbreviations in your research questions, be very clear and specific
-</Scaling Rules>"""
+</Scaling Rules>
+
+<Tool Usage Guidelines>
+- Do NOT use metrics or XML tags in your response.
+- You MUST use the provided tool definitions to call tools.
+- Do NOT generate text representing a tool call; invoke the tool officially.
+</Tool Usage Guidelines>
+
+CRITICAL FORMAT WARNING:
+- NEVER write a tool name like this: ConductResearch={{"research_topic": "..."}}
+- ALWAYS call the tool using the tool-calling interface with the name "ConductResearch" and a SEPARATE "research_topic" argument.
+- The tool name must be ONLY the word: ConductResearch — with NO equals sign, NO JSON, NO braces in the name."""
 
 compress_research_system_prompt = """You are a research assistant that has conducted research on a topic by calling several tools and web searches. Your job is now to clean up the findings, but preserve all of the relevant statements and information that the researcher has gathered. For context, today's date is {date}.
 
@@ -570,3 +601,9 @@ Judgment: FAIL - assumes "modern", "safe", and "good schools" preferences
 <output_instructions>
 Carefully scan the brief for any details not explicitly provided by the user. Be strict - when in doubt about whether something was user-specified, lean toward FAIL.
 </output_instructions>"""
+
+
+
+
+
+

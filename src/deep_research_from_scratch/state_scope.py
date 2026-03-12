@@ -60,3 +60,9 @@ class ResearchQuestion(BaseModel):
     research_brief: str = Field(
         description="A research question that will be used to guide the research.",
     )
+
+
+
+
+
+

@@ -18,6 +18,8 @@ dependencies = [
     "ipykernel>=6.20.0",
     "tavily-python>=0.5.0",
     "pandas>=2.3.3",
+    "traitlets==5.9.0",
+    "langchain-groq>=0.1.0",
 ]
 
 [project.optional-dependencies]

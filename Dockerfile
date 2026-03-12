@@ -38,6 +38,9 @@ COPY notebooks/ ./notebooks/
 # Install dependencies using uv
 RUN uv sync
 
+# Explicitly install Jupyter for the dev container
+RUN uv pip install jupyter ipykernel notebook
+
 # Create files directory for report storage
 RUN mkdir -p /app/src/deep_research_from_scratch/files
 

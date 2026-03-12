@@ -24,7 +24,7 @@ from deep_research_from_scratch.multi_agent_supervisor import supervisor_agent
 # ===== Config =====
 
 from langchain.chat_models import init_chat_model
-writer_model = init_chat_model("google_genai:models/gemini-flash-latest") # model="anthropic:claude-sonnet-4-20250514", max_tokens=64000
+writer_model = init_chat_model("groq:llama-3.3-70b-versatile")
 
 # ===== FINAL REPORT GENERATION =====
 
@@ -85,8 +85,8 @@ from pydantic import BaseModel, Field
 from langchain.chat_models import init_chat_model
 
 # --- 1. SETUP MODEL ---
-# Ensure you have your API key set in env: GOOGLE_API_KEY
-model = init_chat_model("google_genai:models/gemini-2.5-flash-lite")
+# Ensure you have your API key set in env: GROQ_API_KEY
+model = init_chat_model("groq:llama-3.3-70b-versatile")
 
 # --- 2. DEFINE STATE SCHEMAS ---
 
@@ -442,3 +442,9 @@ class Summary(BaseModel):
     """Schema for webpage content summarization."""
     summary: str = Field(description="Concise summary of the webpage content")
     key_excerpts: str = Field(description="Important quotes and excerpts from the content")
+
+
+
+
+
+
